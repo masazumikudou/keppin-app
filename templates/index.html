@@ -2,16 +2,142 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>欠品管理</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>欠品管理APP</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    h1 { font-size: 20px; }
-    p { color: #888; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f5f5f5; }
+
+    h1 { padding: 16px 20px; background: #fff; border-bottom: 1px solid #ddd; font-size: 18px; color: #333; }
+
+    /* 担当者タブ */
+    .staff-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 16px 20px 0; background: #fff; border-bottom: 2px solid #e0e0e0; }
+    .staff-tab { padding: 8px 20px; border-radius: 6px 6px 0 0; border: 1px solid #ddd; border-bottom: none; cursor: pointer; font-size: 14px; background: #f0f0f0; color: #666; }
+    .staff-tab.active { background: #fff; color: #1a73e8; font-weight: bold; border-color: #1a73e8; border-bottom: 2px solid #fff; margin-bottom: -2px; }
+
+    .content { padding: 20px; }
+
+    /* 店舗タブ */
+    .store-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .store-tab { padding: 6px 16px; border-radius: 20px; border: 1px solid #ddd; cursor: pointer; font-size: 13px; background: #f0f0f0; color: #666; }
+    .store-tab.active { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+
+    /* テーブル */
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    th { background: #f8f8f8; padding: 10px 14px; text-align: left; font-size: 13px; color: #555; border-bottom: 1px solid #e0e0e0; }
+    td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+    tr:last-child td { border-bottom: none; }
+    .badge-ok  { color: #2e7d32; font-weight: bold; }
+    .badge-ng  { color: #c62828; font-weight: bold; }
+
+    .empty { color: #999; font-size: 14px; padding: 20px 0; }
   </style>
 </head>
 <body>
-  <h1>欠品管理APP</h1>
-  <p>画面は今後実装予定です。データはGASに保存されています。</p>
-  <p>登録件数: {{ records | length }} 件</p>
+
+<h1>欠品管理APP</h1>
+
+<div class="staff-tabs" id="staffTabs"></div>
+<div class="content" id="content"></div>
+
+<script>
+  const records = {{ records | tojson }};
+
+  // 担当者一覧（登録順・重複なし）
+  const staffList = [...new Set(records.map(r => r['担当者名'] || r.staff_name).filter(Boolean))];
+
+  let currentStaff = null;
+  let currentStore = null;
+
+  function renderStaffTabs() {
+    const tabs = document.getElementById('staffTabs');
+    tabs.innerHTML = staffList.map(name =>
+      `<div class="staff-tab ${name === currentStaff ? 'active' : ''}" onclick="selectStaff('${name}')">${name}</div>`
+    ).join('');
+  }
+
+  function selectStaff(name) {
+    currentStaff = name;
+    currentStore = '合計';
+    renderStaffTabs();
+    renderContent();
+  }
+
+  function selectStore(name) {
+    currentStore = name;
+    renderContent();
+  }
+
+  function renderContent() {
+    const staffRecords = records.filter(r => (r['担当者名'] || r.staff_name) === currentStaff);
+
+    // 店舗一覧
+    const stores = ['合計', ...new Set(staffRecords.map(r => r['店舗名'] || r.store_name).filter(Boolean))];
+
+    const storeTabs = stores.map(s =>
+      `<div class="store-tab ${s === currentStore ? 'active' : ''}" onclick="selectStore('${s}')">${s}</div>`
+    ).join('');
+
+    let tableHtml = '';
+
+    if (currentStore === '合計') {
+      // 欠品のみ・品番ごとに集計
+      const shortage = staffRecords.filter(r => r['欠品'] === '✖' || r.is_shortage == 1 || r.is_shortage === true);
+      const grouped = {};
+      shortage.forEach(r => {
+        const key = `${r['品番'] || r.sku}__${r['色'] || r.color}`;
+        if (!grouped[key]) grouped[key] = { sku: r['品番'] || r.sku, color: r['色'] || r.color, qty: 0, stores: [] };
+        grouped[key].qty += parseInt(r['数量'] || r.quantity || 0);
+        const store = r['店舗名'] || r.store_name;
+        if (!grouped[key].stores.includes(store)) grouped[key].stores.push(store);
+      });
+      const rows = Object.values(grouped).sort((a, b) => a.sku.localeCompare(b.sku));
+
+      if (rows.length === 0) {
+        tableHtml = '<p class="empty">欠品データはありません</p>';
+      } else {
+        tableHtml = `<table>
+          <thead><tr><th>品番</th><th>色</th><th>合計数量</th><th>欠品店舗</th></tr></thead>
+          <tbody>${rows.map(r =>
+            `<tr><td>${r.sku}</td><td>${r.color}</td><td>${r.qty}</td><td>${r.stores.join('・')}</td></tr>`
+          ).join('')}</tbody>
+        </table>`;
+      }
+    } else {
+      // 店舗タブ：全データ表示（日付降順）
+      const storeRecords = staffRecords
+        .filter(r => (r['店舗名'] || r.store_name) === currentStore)
+        .sort((a, b) => (b['日付'] || b.date || '').localeCompare(a['日付'] || a.date || ''));
+
+      if (storeRecords.length === 0) {
+        tableHtml = '<p class="empty">データはありません</p>';
+      } else {
+        tableHtml = `<table>
+          <thead><tr><th>日付</th><th>品番</th><th>色</th><th>数量</th><th>出荷</th></tr></thead>
+          <tbody>${storeRecords.map(r => {
+            const isSh = r['欠品'] === '✖' || r.is_shortage == 1 || r.is_shortage === true;
+            const d = r['日付'] || r.date || '';
+            const dateStr = d ? `${parseInt(d.split('-')[1])}/${parseInt(d.split('-')[2])}` : '';
+            return `<tr>
+              <td>${dateStr}</td>
+              <td>${r['品番'] || r.sku}</td>
+              <td>${r['色'] || r.color}</td>
+              <td>${r['数量'] || r.quantity}</td>
+              <td class="${isSh ? 'badge-ng' : 'badge-ok'}">${isSh ? '❌欠品' : '✅完納'}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>`;
+      }
+    }
+
+    document.getElementById('content').innerHTML = `
+      <div class="store-tabs">${storeTabs}</div>
+      ${tableHtml}
+    `;
+  }
+
+  // 初期表示
+  if (staffList.length > 0) selectStaff(staffList[0]);
+</script>
 </body>
 </html>
