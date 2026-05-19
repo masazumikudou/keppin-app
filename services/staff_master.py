@@ -1,29 +1,20 @@
-import os
-from config import STAFF_MASTER_PATH
+_STAFF = {
+    '沖田': 'U04U91LMK3R',
+    '平井': 'U04V31XF9L2',
+    '田村': 'U04VD6VE8SC',
+    '田中': 'U04V24ZU8TB',
+    '福本': 'U087XEMUNRF',
+    '柴崎': 'U04UA6WL5P1',
+    '濱本': 'U06RYEJTUUE',
+    '壷井': 'U082VJZU0TF',
+    '鍋谷': 'U04U8U0PPBR',
+    '根岸': 'U04U91KK9F1',
+    '高森': 'U04UA5DFLH5',
+    '浅野': 'U04UJ3A1EES',
+    '高橋': 'U04RRU4670X',
+    '黒崎': 'U04UGSP9WRL',
+}
 
-_cache = None
 
 def load_staff_by_name() -> dict:
-    global _cache
-    if _cache is not None:
-        return _cache
-
-    try:
-        from openpyxl import load_workbook
-        if not os.path.exists(STAFF_MASTER_PATH):
-            return {}
-        wb = load_workbook(STAFF_MASTER_PATH, read_only=True, data_only=True)
-        ws = wb.active
-        result = {}
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            if not row or row[0] is None:
-                continue
-            name      = str(row[1]).strip() if row[1] else ''
-            member_id = str(row[2]).strip() if len(row) > 2 and row[2] else ''
-            if name:
-                result[name] = {'name': name, 'slack_member_id': member_id}
-        wb.close()
-        _cache = result
-        return result
-    except Exception:
-        return {}
+    return {name: {'name': name, 'slack_member_id': mid} for name, mid in _STAFF.items()}
