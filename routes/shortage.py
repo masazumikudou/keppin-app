@@ -1,10 +1,51 @@
 from flask import Blueprint, request, jsonify
-from services.gas_client import save_records
+from services.gas_client import save_records, ship_record
 from services.slack_client import notify
 from services.staff_master import load_staff_by_name
 import datetime
 
 bp = Blueprint('shortage', __name__)
+
+
+@bp.route('/api/shortage/ship', methods=['POST'])
+def ship():
+    data       = request.get_json(force=True)
+    ids        = data.get('ids') or ([data.get('id')] if data.get('id') else [])
+    items      = data.get('items', [])
+    store_name = data.get('store_name', '')
+    staff_name = data.get('staff_name', '')
+    store_code = data.get('store_code', '')
+    date       = data.get('date', datetime.date.today().isoformat())
+
+    if not ids:
+        return jsonify({'success': False, 'error': 'idが空です'}), 400
+
+    # DB を出荷済みに更新
+    for record_id in ids:
+        try:
+            ship_record(record_id)
+        except Exception:
+            pass
+
+    result = {'success': True, 'shipped': len(ids)}
+
+    # 出荷品番がある場合は OS2 登録 + TN メール送信
+    if items and store_name:
+        try:
+            from services.os2_client import save_order
+            os2_res = save_order(store_name, staff_name, store_code, items)
+            result['os2'] = os2_res
+        except Exception as e:
+            result['os2_error'] = str(e)
+
+        try:
+            from services.tn_client import send_order
+            tn_res = send_order(store_name, staff_name, store_code, date, items)
+            result['tn'] = tn_res
+        except Exception as e:
+            result['tn_error'] = str(e)
+
+    return jsonify(result)
 
 
 @bp.route('/api/shortage/register', methods=['POST'])
@@ -26,22 +67,22 @@ def register():
     for store in stores:
         store_name = store.get('store_name', '')
         staff_name = store.get('staff_name', '')
+        store_code = store.get('store_code', '')
         items      = store.get('items', [])
 
-        # GAS保存用レコードを組み立て
         for item in items:
             records.append({
                 'date':           date,
                 'aggregate_name': aggregate,
                 'store_name':     store_name,
                 'staff_name':     staff_name,
+                'store_code':     store_code,
                 'sku':            item.get('sku', ''),
                 'color':          item.get('color', ''),
                 'quantity':       item.get('quantity', 0),
                 'is_shortage':    item.get('is_shortage', False),
             })
 
-        # Slack通知
         staff_info = staff_master.get(staff_name, {})
         member_id  = staff_info.get('slack_member_id', '')
         ok = notify(member_id, date_str, store_name)
@@ -50,7 +91,6 @@ def register():
         else:
             errors.append(f'{store_name}: Slack通知失敗')
 
-    # GASに一括保存
     try:
         save_records(records)
     except Exception as e:
