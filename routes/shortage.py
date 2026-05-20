@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from services.gas_client import save_records, ship_record
+from services.gas_client import save_records, ship_record, delete_store_records
 from services.slack_client import notify
 from services.staff_master import load_staff_by_name
 import datetime
@@ -45,6 +45,17 @@ def ship():
         except Exception as e:
             result['tn_error'] = str(e)
 
+    return jsonify(result)
+
+
+@bp.route('/api/shortage/delete_store', methods=['POST'])
+def delete_store():
+    data       = request.get_json(force=True)
+    store_name = data.get('store_name', '')
+    staff_name = data.get('staff_name', '')
+    if not store_name or not staff_name:
+        return jsonify({'success': False, 'error': 'store_name/staff_nameが空です'}), 400
+    result = delete_store_records(store_name, staff_name)
     return jsonify(result)
 
 

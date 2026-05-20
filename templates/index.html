@@ -20,8 +20,11 @@
 
     /* 店舗タブ */
     .store-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-    .store-tab { padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; cursor: pointer; font-size: 13px; background: #f0f0f0; color: #666; }
+    .store-tab { padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; cursor: pointer; font-size: 13px; background: #f0f0f0; color: #666; display:inline-flex; align-items:center; gap:6px; }
     .store-tab.active { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+    .store-tab-del { font-size:12px; line-height:1; color:#aaa; cursor:pointer; padding:0 2px; }
+    .store-tab.active .store-tab-del { color:rgba(255,255,255,0.7); }
+    .store-tab-del:hover { color:#e53935; }
 
     /* 出荷ボタン */
     .btn-ship { padding: 10px 24px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 12px; width: 100%; }
@@ -138,9 +141,11 @@
   function renderContent() {
     const staffRecords = records.filter(r => (r['担当者名'] || r.staff_name) === currentStaff);
     const stores = ['合計', ...new Set(staffRecords.map(r => r['店舗名'] || r.store_name).filter(Boolean))];
-    const storeTabs = stores.map(s =>
-      `<div class="store-tab ${s === currentStore ? 'active' : ''}" onclick="selectStore('${s}')">${s}</div>`
-    ).join('');
+    const storeTabs = stores.map(s => {
+      if (s === '合計') return `<div class="store-tab ${s === currentStore ? 'active' : ''}" onclick="selectStore('${s}')">${s}</div>`;
+      const delBtn = `<span class="store-tab-del" onclick="event.stopPropagation(); deleteStore('${s.replace(/'/g, "\\'")}')">✕</span>`;
+      return `<div class="store-tab ${s === currentStore ? 'active' : ''}" onclick="selectStore('${s}')">${s}${delBtn}</div>`;
+    }).join('');
 
     let bodyHtml = '';
 
@@ -324,6 +329,28 @@
     } else {
       win.close();
       alert('エラーが発生しました: ' + (data.error || ''));
+    }
+  }
+
+  async function deleteStore(storeName) {
+    if (!confirm(`「${storeName}」のデータを削除しますか？`)) return;
+    const resp = await fetch('/api/shortage/delete_store', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ store_name: storeName, staff_name: currentStaff }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      for (let i = records.length - 1; i >= 0; i--) {
+        const r = records[i];
+        if ((r.store_name || r['店舗名']) === storeName && (r.staff_name || r['担当者名']) === currentStaff) {
+          records.splice(i, 1);
+        }
+      }
+      currentStore = '合計';
+      renderContent();
+    } else {
+      alert('削除に失敗しました: ' + (data.error || ''));
     }
   }
 
