@@ -19,10 +19,10 @@ def list_records(filters: dict = None) -> list:
     return resp.json().get('records', [])
 
 
-def delete_store_records(store_name: str, staff_name: str) -> dict:
+def delete_store_records(store_name: str, staff_name: str, date: str = '') -> dict:
     resp = requests.post(
         f'{PHP_ENDPOINT}?action=delete_store',
-        json={'store_name': store_name, 'staff_name': staff_name},
+        json={'store_name': store_name, 'staff_name': staff_name, 'date': date},
         timeout=15,
     )
     return resp.json()

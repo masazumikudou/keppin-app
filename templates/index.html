@@ -140,11 +140,23 @@
 
   function renderContent() {
     const staffRecords = records.filter(r => (r['担当者名'] || r.staff_name) === currentStaff);
-    const stores = ['合計', ...new Set(staffRecords.map(r => r['店舗名'] || r.store_name).filter(Boolean))];
-    const storeTabs = stores.map(s => {
-      if (s === '合計') return `<div class="store-tab ${s === currentStore ? 'active' : ''}" onclick="selectStore('${s}')">${s}</div>`;
-      const delBtn = `<span class="store-tab-del" onclick="event.stopPropagation(); deleteStore('${s.replace(/'/g, "\\'")}')">✕</span>`;
-      return `<div class="store-tab ${s === currentStore ? 'active' : ''}" onclick="selectStore('${s}')">${s}${delBtn}</div>`;
+
+    // 店舗＋日付の複合キーで重複排除
+    const storeKeySet = new Set(staffRecords.map(r => {
+      const name = r['店舗名'] || r.store_name || '';
+      const date = r['日付'] || r.date || '';
+      return name ? `${name}|||${date}` : '';
+    }).filter(Boolean));
+    const storeKeys = ['合計', ...storeKeySet];
+
+    const storeTabs = storeKeys.map(key => {
+      if (key === '合計') return `<div class="store-tab ${currentStore === '合計' ? 'active' : ''}" onclick="selectStore('合計')">合計</div>`;
+      const [sName, sDate] = key.split('|||');
+      let label = sName;
+      if (sDate) { const p = sDate.split('-'); label += ` ${parseInt(p[1])}/${parseInt(p[2])}`; }
+      const safeKey = key.replace(/'/g, "\\'");
+      const delBtn = `<span class="store-tab-del" onclick="event.stopPropagation(); deleteStore('${safeKey}')">✕</span>`;
+      return `<div class="store-tab ${currentStore === key ? 'active' : ''}" onclick="selectStore('${safeKey}')">${label}${delBtn}</div>`;
     }).join('');
 
     let bodyHtml = '';
@@ -182,9 +194,10 @@
       }
 
     } else {
-      const storeId = currentStore.replace(/[\s・]/g, '_');
+      const [filterName, filterDate] = currentStore.split('|||');
+      const storeId = currentStore.replace(/[|\s・]/g, '_');
       const storeRecords = staffRecords
-        .filter(r => (r['店舗名'] || r.store_name) === currentStore)
+        .filter(r => (r['店舗名'] || r.store_name) === filterName && (r['日付'] || r.date || '') === (filterDate || ''))
         .sort((a, b) => (b['日付'] || b.date || '').localeCompare(a['日付'] || a.date || ''));
 
       if (storeRecords.length === 0) {
@@ -250,13 +263,14 @@
     const checked = [...document.querySelectorAll(`.ship-chk-${storeId}:checked`)];
     if (checked.length === 0) { alert('出荷する品番を選択してください'); return; }
 
-    // 店舗情報を records から取得
+    // 店舗情報を records から取得（複合キー対応）
+    const [filterName, filterDate] = currentStore.split('|||');
     const storeRecs = records.filter(r =>
       (r['担当者名'] || r.staff_name) === currentStaff &&
-      (r['店舗名']   || r.store_name) === currentStore
+      (r['店舗名']   || r.store_name) === filterName
     );
     const first     = storeRecs[0] || {};
-    const storeName = first.store_name || first['店舗名'] || currentStore;
+    const storeName = first.store_name || first['店舗名'] || filterName;
     const staffName = first.staff_name || first['担当者名'] || currentStaff;
     const storeCode = first.store_code || '';
     const today     = new Date().toISOString().split('T')[0];
@@ -332,20 +346,24 @@
     }
   }
 
-  async function deleteStore(storeName) {
-    if (!confirm(`「${storeName}」のデータを削除しますか？`)) return;
+  async function deleteStore(storeKey) {
+    const [storeName, storeDate] = storeKey.split('|||');
+    const p = (storeDate || '').split('-');
+    const dateLabel = storeDate ? ` ${parseInt(p[1])}/${parseInt(p[2])}` : '';
+    if (!confirm(`「${storeName}${dateLabel}」のデータを削除しますか？`)) return;
     const resp = await fetch('/api/shortage/delete_store', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ store_name: storeName, staff_name: currentStaff }),
+      body: JSON.stringify({ store_name: storeName, staff_name: currentStaff, date: storeDate || '' }),
     });
     const data = await resp.json();
     if (data.success) {
       for (let i = records.length - 1; i >= 0; i--) {
         const r = records[i];
-        if ((r.store_name || r['店舗名']) === storeName && (r.staff_name || r['担当者名']) === currentStaff) {
-          records.splice(i, 1);
-        }
+        const matchStore = (r.store_name || r['店舗名']) === storeName;
+        const matchDate  = !storeDate || (r['日付'] || r.date || '') === storeDate;
+        const matchStaff = (r.staff_name || r['担当者名']) === currentStaff;
+        if (matchStore && matchDate && matchStaff) records.splice(i, 1);
       }
       currentStore = '合計';
       renderContent();

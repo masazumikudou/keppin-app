@@ -53,9 +53,10 @@ def delete_store():
     data       = request.get_json(force=True)
     store_name = data.get('store_name', '')
     staff_name = data.get('staff_name', '')
+    date       = data.get('date', '')
     if not store_name or not staff_name:
         return jsonify({'success': False, 'error': 'store_name/staff_nameが空です'}), 400
-    result = delete_store_records(store_name, staff_name)
+    result = delete_store_records(store_name, staff_name, date)
     return jsonify(result)
 
 
