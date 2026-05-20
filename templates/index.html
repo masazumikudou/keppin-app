@@ -103,6 +103,7 @@
   const records = {{ records | tojson }};
   const staffList = {{ staff_list | tojson }};
   const TN_APP_URL = {{ tn_app_url | tojson }};
+  const nyuka = {{ nyuka | tojson }};
 
   let currentStaff = null;
   let currentStore = null;
@@ -205,7 +206,7 @@
       } else {
         // PCテーブル
         const pcTable = `<table>
-          <thead><tr><th></th><th>日付</th><th>品番</th><th>色</th><th>数量</th><th>状態</th></tr></thead>
+          <thead><tr><th></th><th>日付</th><th>品番</th><th>色</th><th>数量</th><th>状態</th><th>入荷予定</th></tr></thead>
           <tbody>${storeRecords.map(r => {
             const isSh = r['欠品'] === '✖' || r.is_shortage == 1;
             const d = r['日付'] || r.date || '';
@@ -213,6 +214,7 @@
             const sku = r['品番'] || r.sku || '';
             const color = r['色'] || r.color || '';
             const qty = r['数量'] || r.quantity || 0;
+            const nyukaDate = nyuka[`${sku}|||${color}`] || '';
             const chk = isSh
               ? `<input type="checkbox" class="ship-chk ship-chk-${storeId}" value="${r.id || r['id']}" data-sku="${sku}" data-color="${color}" data-qty="${qty}">`
               : '';
@@ -221,6 +223,7 @@
               <td>${sku}</td><td>${color}</td>
               <td>${qty}</td>
               <td class="${isSh ? 'badge-ng' : 'badge-ok'}">${isSh ? '❌欠品' : '✅完納'}</td>
+              <td style="color:#1a73e8; font-weight:bold;">${nyukaDate || '-'}</td>
             </tr>`;
           }).join('')}</tbody>
         </table>`;
@@ -233,6 +236,7 @@
           const sku = r['品番'] || r.sku || '';
           const color = r['色'] || r.color || '';
           const qty = r['数量'] || r.quantity || 0;
+          const nyukaDate = nyuka[`${sku}|||${color}`] || '';
           const chk = isSh
             ? `<input type="checkbox" class="ship-chk ship-chk-${storeId}" value="${r.id || r['id']}" data-sku="${sku}" data-color="${color}" data-qty="${qty}">`
             : '<span style="width:18px;display:inline-block;"></span>';
@@ -240,7 +244,7 @@
             <div class="card-chk">${chk}</div>
             <div class="card-body">
               <div class="card-sku">${sku}</div>
-              <div class="card-meta">${color}　｜　${qty}個　｜　${dateStr}</div>
+              <div class="card-meta">${color}　｜　${qty}個　｜　${dateStr}${nyukaDate ? `　｜　入荷 <span style="color:#1a73e8;font-weight:bold;">${nyukaDate}</span>` : ''}</div>
               <div class="card-status ${isSh ? 'badge-ng' : 'badge-ok'}">${isSh ? '❌欠品' : '✅完納'}</div>
             </div>
           </div>`;
