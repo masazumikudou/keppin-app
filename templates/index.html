@@ -9,8 +9,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: sans-serif; background: #f5f5f5; }
 
-    h1 { padding: 14px 16px; background: #fff; border-bottom: 1px solid #ddd; font-size: 18px; color: #333; display:flex; align-items:baseline; gap:12px; }
-    #lastUpdate { font-size: 12px; color: #888; font-weight: normal; }
+    h1 { padding: 14px 16px; background: #fff; border-bottom: 1px solid #ddd; font-size: 18px; color: #333; }
 
     /* 担当者タブ */
     .staff-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px 0; background: #fff; border-bottom: 2px solid #e0e0e0; }
@@ -80,7 +79,7 @@
 </head>
 <body>
 
-<h1>チュウザンくん<span id="lastUpdate"></span></h1>
+<h1>チュウザンくん</h1>
 <div class="staff-tabs" id="staffTabs"></div>
 <div class="content" id="content"></div>
 
@@ -105,26 +104,23 @@
   let currentStaff = null;
   let currentStore = null;
 
-  // 最終更新日表示
-  (function() {
-    if (!records.length) return;
-    const latest = records.reduce((a, b) =>
-      (a['日付'] || a.date || '') >= (b['日付'] || b.date || '') ? a : b
-    );
-    const d = latest['日付'] || latest.date || '';
-    const agg = latest.aggregate_name || '';
-    if (!d) return;
-    const parts = d.split('-');
-    const dateStr = `${parseInt(parts[1])}/${parseInt(parts[2])}`;
-    document.getElementById('lastUpdate').textContent = dateStr;
-  })();
 
   function isMobile() { return window.innerWidth < 768; }
 
   function renderStaffTabs() {
-    document.getElementById('staffTabs').innerHTML = staffList.map(name =>
-      `<div class="staff-tab ${name === currentStaff ? 'active' : ''}" onclick="selectStaff('${name}')">${name}</div>`
-    ).join('');
+    document.getElementById('staffTabs').innerHTML = staffList.map(name => {
+      const staffRecs = records.filter(r => (r['担当者名'] || r.staff_name) === name);
+      const latest = staffRecs.reduce((a, b) =>
+        (a['日付'] || a.date || '') >= (b['日付'] || b.date || '') ? a : b
+      , {});
+      const d = latest['日付'] || latest.date || '';
+      let dateStr = '';
+      if (d) {
+        const parts = d.split('-');
+        dateStr = `<span style="font-size:11px; color:#999; margin-left:5px;">${parseInt(parts[1])}/${parseInt(parts[2])}</span>`;
+      }
+      return `<div class="staff-tab ${name === currentStaff ? 'active' : ''}" onclick="selectStaff('${name}')">${name}${dateStr}</div>`;
+    }).join('');
   }
 
   function selectStaff(name) {
