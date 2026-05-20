@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>欠品管理APP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: sans-serif; background: #f5f5f5; }
@@ -26,6 +27,20 @@
     .btn-ship { padding: 10px 24px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 12px; width: 100%; }
     .btn-ship:hover { background: #1558b0; }
     .btn-ship:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* 差し戻しモーダル */
+    #kekkinModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center; }
+    #kekkinModal.open { display:flex; }
+    #kekkinModalBox { background:#fff; border-radius:12px; padding:28px 24px; max-width:380px; width:90%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+    #kekkinModalBox h2 { font-size:17px; color:#333; margin-bottom:6px; }
+    #kekkinModalBox p { font-size:13px; color:#666; margin-bottom:18px; }
+    #kekkinQr { margin:0 auto 18px; width:180px; height:180px; }
+    #kekkinQr canvas, #kekkinQr img { width:180px !important; height:180px !important; }
+    .kekkin-btn-row { display:flex; gap:10px; justify-content:center; margin-top:8px; }
+    #kekkinProceedBtn { flex:1; padding:12px; background:#1a73e8; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer; }
+    #kekkinProceedBtn:hover { background:#1558b0; }
+    #kekkinCancelBtn { padding:12px 18px; background:#f0f0f0; color:#555; border:none; border-radius:6px; font-size:14px; cursor:pointer; }
+    #kekkinCancelBtn:hover { background:#e0e0e0; }
     input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; }
 
     .badge-ok { color: #2e7d32; font-weight: bold; }
@@ -68,9 +83,23 @@
 <div class="staff-tabs" id="staffTabs"></div>
 <div class="content" id="content"></div>
 
+<!-- 差し戻しモーダル -->
+<div id="kekkinModal">
+  <div id="kekkinModalBox">
+    <h2>TNアプリへ差し戻し</h2>
+    <p>スマホの場合はQRを読み取ってください</p>
+    <div id="kekkinQr"></div>
+    <div class="kekkin-btn-row">
+      <button id="kekkinCancelBtn" onclick="closeKekkinModal()">キャンセル</button>
+      <button id="kekkinProceedBtn">このまま進める（PC）</button>
+    </div>
+  </div>
+</div>
+
 <script>
   const records = {{ records | tojson }};
   const staffList = {{ staff_list | tojson }};
+  const TN_APP_URL = {{ tn_app_url | tojson }};
 
   let currentStaff = null;
   let currentStore = null;
@@ -199,10 +228,11 @@
     `;
   }
 
+  let _kekkinPending = null; // モーダル確定時に使うデータを保持
+
   async function shipSelected(storeId) {
     const checked = [...document.querySelectorAll(`.ship-chk-${storeId}:checked`)];
     if (checked.length === 0) { alert('出荷する品番を選択してください'); return; }
-    if (!confirm(`${checked.length}件を出荷済みにしますか？\nOS2への登録とTN発注メール送信も行います。`)) return;
 
     // 店舗情報を records から取得
     const storeRecs = records.filter(r =>
@@ -222,6 +252,47 @@
       quantity: parseInt(c.dataset.qty || '0'),
     }));
 
+    // TN差し戻しURLを構築
+    const base = TN_APP_URL || window.location.origin.replace(/:8090$/, ':8080');
+    const params = new URLSearchParams({
+      from:  'kekkin',
+      store: storeName,
+      staff: staffName,
+      code:  storeCode,
+      date:  today,
+      items: JSON.stringify(items),
+    });
+    const tnUrl = `${base}/order?${params.toString()}`;
+
+    // モーダルを開く
+    _kekkinPending = { ids, storeName, staffName, storeCode, today, items, tnUrl };
+    showKekkinModal(tnUrl);
+  }
+
+  function showKekkinModal(tnUrl) {
+    const modal = document.getElementById('kekkinModal');
+    const qrDiv = document.getElementById('kekkinQr');
+    qrDiv.innerHTML = '';
+    new QRCode(qrDiv, { text: tnUrl, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+    modal.classList.add('open');
+
+    document.getElementById('kekkinProceedBtn').onclick = async () => {
+      await execShip();
+    };
+  }
+
+  function closeKekkinModal() {
+    document.getElementById('kekkinModal').classList.remove('open');
+    _kekkinPending = null;
+  }
+
+  async function execShip() {
+    if (!_kekkinPending) return;
+    const { ids, storeName, staffName, storeCode, today, items, tnUrl } = _kekkinPending;
+
+    document.getElementById('kekkinProceedBtn').disabled = true;
+    document.getElementById('kekkinProceedBtn').textContent = '処理中...';
+
     const resp = await fetch('/api/shortage/ship', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -229,20 +300,18 @@
     });
     const data = await resp.json();
 
+    closeKekkinModal();
+
     if (data.success) {
       ids.forEach(id => {
         const rec = records.find(r => String(r.id || r['id']) === String(id));
         if (rec) { rec.is_shortage = 0; rec['欠品'] = '〇'; }
       });
-      let msg = `${ids.length}件を出荷済みにしました。`;
-      if (data.os2)  msg += '\nOS2登録: 完了';
-      if (data.tn && data.tn.status === 'ok') msg += '\nTN発注メール: 送信済み';
-      if (data.tn && data.tn.status === 'skipped') msg += '\nTN発注メール: 設定なしのためスキップ';
-      alert(msg);
+      window.open(tnUrl, '_blank');
+      renderContent();
     } else {
       alert('エラーが発生しました: ' + (data.error || ''));
     }
-    renderContent();
   }
 
   if (staffList.length > 0) selectStaff(staffList[0]);
