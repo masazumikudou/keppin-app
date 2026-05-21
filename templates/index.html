@@ -12,8 +12,8 @@
     h1 { padding: 14px 16px; background: #fff; border-bottom: 1px solid #ddd; font-size: 18px; color: #333; }
 
     /* 担当者タブ */
-    .staff-tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 10px 16px 0; background: #fff; border-bottom: 2px solid #e0e0e0; }
-    .staff-tab { padding: 7px 18px; border-radius: 6px 6px 0 0; border: 1px solid #ddd; border-bottom: none; cursor: pointer; font-size: 14px; background: #f0f0f0; color: #666; }
+    .staff-tabs { display: flex; flex-wrap: nowrap; padding: 10px 16px 0; gap: 4px; background: #fff; border-bottom: 2px solid #e0e0e0; }
+    .staff-tab { flex: 1; min-width: 0; text-align: center; padding: 7px 4px; border-radius: 6px 6px 0 0; border: 1px solid #ddd; border-bottom: none; cursor: pointer; font-size: 13px; background: #f0f0f0; color: #666; white-space: nowrap; overflow: hidden; }
     .staff-tab.active { background: #fff; color: #1a73e8; font-weight: bold; border-color: #1a73e8; border-bottom: 2px solid #fff; margin-bottom: -2px; }
 
     .content { padding: 16px; }
@@ -83,7 +83,11 @@
 <body>
 
 <h1>チュウザンくん</h1>
-<div class="staff-tabs" id="staffTabs"></div>
+<div class="staff-tabs">
+  {% for name in staff_list %}
+  <div class="staff-tab" id="tab-{{ name }}" onclick="selectStaff('{{ name }}')">{{ name }}<span id="tabdate-{{ name }}" style="font-size:11px; color:#999; margin-left:3px;"></span></div>
+  {% endfor %}
+</div>
 <div class="content" id="content"></div>
 
 <!-- 差し戻しモーダル -->
@@ -112,19 +116,22 @@
   function isMobile() { return window.innerWidth < 768; }
 
   function renderStaffTabs() {
-    document.getElementById('staffTabs').innerHTML = staffList.map(name => {
+    staffList.forEach(name => {
+      const tab = document.getElementById(`tab-${name}`);
+      if (!tab) return;
+      tab.classList.toggle('active', name === currentStaff);
       const staffRecs = records.filter(r => (r['担当者名'] || r.staff_name) === name);
+      if (!staffRecs.length) return;
       const latest = staffRecs.reduce((a, b) =>
         (a['日付'] || a.date || '') >= (b['日付'] || b.date || '') ? a : b
-      , {});
+      );
       const d = latest['日付'] || latest.date || '';
-      let dateStr = '';
-      if (d) {
-        const parts = d.split('-');
-        dateStr = `<span style="font-size:11px; color:#999; margin-left:5px;">${parseInt(parts[1])}/${parseInt(parts[2])}</span>`;
+      const dateEl = document.getElementById(`tabdate-${name}`);
+      if (dateEl && d) {
+        const p = d.split('-');
+        dateEl.textContent = `${parseInt(p[1])}/${parseInt(p[2])}`;
       }
-      return `<div class="staff-tab ${name === currentStaff ? 'active' : ''}" onclick="selectStaff('${name}')">${name}${dateStr}</div>`;
-    }).join('');
+    });
   }
 
   function selectStaff(name) {
