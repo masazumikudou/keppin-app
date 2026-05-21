@@ -275,7 +275,7 @@
   let _kekkinPending = null; // モーダル確定時に使うデータを保持
 
   async function shipSelected(storeId) {
-    const checked = [...document.querySelectorAll(`.ship-chk-${storeId}:checked`)];
+    const checked = [...document.querySelectorAll(`.${CSS.escape('ship-chk-' + storeId)}:checked`)];
     if (checked.length === 0) { alert('出荷する品番を選択してください'); return; }
 
     // 店舗情報を records から取得（複合キー対応）
