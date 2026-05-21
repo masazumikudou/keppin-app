@@ -25,7 +25,9 @@ def _nyuka_badge(nyuka: dict) -> dict:
         except Exception:
             return (0, 0)
     latest = max(dates, key=parse_md)
-    color = _NYUKA_BADGE_COLORS[hash(latest) % len(_NYUKA_BADGE_COLORS)]
+    parts = latest.split('/')
+    color_idx = (int(parts[0]) * 31 + int(parts[1])) % len(_NYUKA_BADGE_COLORS)
+    color = _NYUKA_BADGE_COLORS[color_idx]
     return {'date': latest, 'bg': color['bg'], 'text': color['text']}
 
 
