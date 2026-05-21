@@ -171,7 +171,7 @@
     let bodyHtml = '';
 
     if (currentStore === '合計') {
-      const shortage = staffRecords.filter(r => r['欠品'] === '✖' || r.is_shortage == 1);
+      const shortage = staffRecords.filter(r => r['欠品'] === '✖' || (r.is_shortage && r.is_shortage !== '0'));
       const grouped = {};
       shortage.forEach(r => {
         const key = `${r['品番'] || r.sku}__${r['色'] || r.color}`;

@@ -11,6 +11,7 @@ def fetch_nyuka_schedule() -> dict:
     try:
         resp = requests.get(NYUKA_SHEET_URL, timeout=10)
         reader = csv.reader(io.StringIO(resp.text))
+        next(reader, None)  # ヘッダー行をスキップ
         result = {}
         for row in reader:
             if len(row) < 4:
