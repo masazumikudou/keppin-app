@@ -7,19 +7,19 @@ NYUKA_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1wEg-0TOLjVcmwe30GWBgE
 
 
 def fetch_nyuka_schedule() -> dict:
-    """品番+カラー → 入荷予定日 の辞書を返す。取得失敗時は空dict。"""
+    """品番 → {qty, date} の辞書を返す。取得失敗時は空dict。"""
     try:
         resp = requests.get(NYUKA_SHEET_URL, timeout=10)
         reader = csv.reader(io.StringIO(resp.text))
         result = {}
         for row in reader:
-            if len(row) < 5:
+            if len(row) < 4:
                 continue
-            sku   = row[1].strip()
-            color = row[2].strip()
-            date  = row[4].strip()
+            sku  = row[1].strip()   # B列：品番
+            qty  = row[2].strip()   # C列：入荷数量
+            date = row[3].strip()   # D列：入荷日
             if sku and date:
-                result[f'{sku}|||{color}'] = date
+                result[sku] = {'qty': qty, 'date': date}
         return result
     except Exception:
         return {}

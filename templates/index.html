@@ -214,7 +214,10 @@
             const sku = r['品番'] || r.sku || '';
             const color = r['色'] || r.color || '';
             const qty = r['数量'] || r.quantity || 0;
-            const nyukaDate = nyuka[`${sku}|||${color}`] || '';
+            const nyukaInfo = nyuka[sku] || null;
+            const nyukaCell = nyukaInfo
+              ? `<span style="color:#1a73e8;font-weight:bold;">${nyukaInfo.date}</span><span style="color:#888;font-size:11px;margin-left:4px;">${nyukaInfo.qty}個</span>`
+              : '-';
             const chk = isSh
               ? `<input type="checkbox" class="ship-chk ship-chk-${storeId}" value="${r.id || r['id']}" data-sku="${sku}" data-color="${color}" data-qty="${qty}">`
               : '';
@@ -223,7 +226,7 @@
               <td>${sku}</td><td>${color}</td>
               <td>${qty}</td>
               <td class="${isSh ? 'badge-ng' : 'badge-ok'}">${isSh ? '❌欠品' : '✅完納'}</td>
-              <td style="color:#1a73e8; font-weight:bold;">${nyukaDate || '-'}</td>
+              <td>${nyukaCell}</td>
             </tr>`;
           }).join('')}</tbody>
         </table>`;
@@ -236,7 +239,7 @@
           const sku = r['品番'] || r.sku || '';
           const color = r['色'] || r.color || '';
           const qty = r['数量'] || r.quantity || 0;
-          const nyukaDate = nyuka[`${sku}|||${color}`] || '';
+          const nyukaInfo = nyuka[sku] || null;
           const chk = isSh
             ? `<input type="checkbox" class="ship-chk ship-chk-${storeId}" value="${r.id || r['id']}" data-sku="${sku}" data-color="${color}" data-qty="${qty}">`
             : '<span style="width:18px;display:inline-block;"></span>';
@@ -244,7 +247,7 @@
             <div class="card-chk">${chk}</div>
             <div class="card-body">
               <div class="card-sku">${sku}</div>
-              <div class="card-meta">${color}　｜　${qty}個　｜　${dateStr}${nyukaDate ? `　｜　入荷 <span style="color:#1a73e8;font-weight:bold;">${nyukaDate}</span>` : ''}</div>
+              <div class="card-meta">${color}　｜　${qty}個　｜　${dateStr}${nyukaInfo ? `　｜　入荷 <span style="color:#1a73e8;font-weight:bold;">${nyukaInfo.date}</span> ${nyukaInfo.qty}個` : ''}</div>
               <div class="card-status ${isSh ? 'badge-ng' : 'badge-ok'}">${isSh ? '❌欠品' : '✅完納'}</div>
             </div>
           </div>`;
