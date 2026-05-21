@@ -108,6 +108,4 @@ def register():
     except Exception as e:
         return jsonify({'success': False, 'error': f'データ保存失敗: {e}'}), 502
 
-    if errors:
-        return jsonify({'success': False, 'error': ', '.join(errors), 'sent': sent})
-    return jsonify({'success': True, 'sent': sent})
+    return jsonify({'success': True, 'sent': sent, 'slack_errors': errors})
