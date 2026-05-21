@@ -9,7 +9,8 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: sans-serif; background: #f5f5f5; }
 
-    h1 { padding: 14px 16px; background: #fff; border-bottom: 1px solid #ddd; font-size: 18px; color: #333; }
+    h1 { padding: 14px 16px; background: #fff; border-bottom: 1px solid #ddd; font-size: 18px; color: #333; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .nyuka-badge { font-size:12px; font-weight:bold; padding:4px 10px; border-radius:20px; white-space:nowrap; }
 
     /* 担当者タブ */
     .staff-tabs { display: flex; flex-wrap: nowrap; padding: 10px 16px 0; gap: 4px; background: #fff; border-bottom: 2px solid #e0e0e0; }
@@ -82,7 +83,7 @@
 </head>
 <body>
 
-<h1>チュウザンくん</h1>
+<h1>チュウザンくん{% if nyuka_badge %}<span class="nyuka-badge" style="background:{{ nyuka_badge.bg }}; color:{{ nyuka_badge.text }};">入荷予定 {{ nyuka_badge.date }} 更新</span>{% endif %}</h1>
 <div class="staff-tabs">
   {% for name in staff_list %}
   <div class="staff-tab" id="tab-{{ name }}" onclick="selectStaff('{{ name }}')">{{ name }}<span id="tabdate-{{ name }}" style="font-size:11px; color:#999; margin-left:3px;"></span></div>
