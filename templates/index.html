@@ -60,6 +60,7 @@
       tr:last-child td { border-bottom: none; }
       .card-list { display: none; }
       .btn-ship { width: auto; }
+      .staff-select-wrap { display: none; }
     }
 
     /* ── スマホ：カード表示 ── */
@@ -78,6 +79,13 @@
       .sum-card { background: #fff; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 4px solid #c62828; margin-bottom: 10px; }
       .sum-card-sku { font-size: 15px; font-weight: bold; color: #333; }
       .sum-card-meta { font-size: 12px; color: #888; margin-top: 3px; }
+      /* 担当者タブを非表示→ドロップダウンへ */
+      .staff-tabs { display: none; }
+      .staff-select-wrap { display: block; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e0e0e0; }
+      /* 店舗タブを横スライドに */
+      .store-tabs { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: none; }
+      .store-tabs::-webkit-scrollbar { display: none; }
+      .store-tab { flex-shrink: 0; scroll-snap-align: start; }
     }
   </style>
 </head>
@@ -89,17 +97,25 @@
   <div class="staff-tab" id="tab-{{ name }}" onclick="selectStaff('{{ name }}')">{{ name }}<span id="tabdate-{{ name }}" style="font-size:11px; color:#999; margin-left:3px;"></span></div>
   {% endfor %}
 </div>
+<div class="staff-select-wrap">
+  <select id="staff-select" onchange="selectStaff(this.value)"
+    style="width:100%; padding:10px 12px; font-size:16px; border:1px solid #ddd; border-radius:8px; background:#fff; color:#333; appearance:auto;">
+    {% for name in staff_list %}
+    <option value="{{ name }}">{{ name }}</option>
+    {% endfor %}
+  </select>
+</div>
 <div class="content" id="content"></div>
 
 <!-- 差し戻しモーダル -->
 <div id="kekkinModal">
   <div id="kekkinModalBox">
     <h2>TNアプリへ差し戻し</h2>
-    <p>スマホの場合はQRを読み取ってください</p>
+    <p id="kekkinModalMsg"></p>
     <div id="kekkinQr"></div>
     <div class="kekkin-btn-row">
       <button id="kekkinCancelBtn" onclick="closeKekkinModal()">キャンセル</button>
-      <button id="kekkinProceedBtn">このまま進める（PC）</button>
+      <button id="kekkinProceedBtn"></button>
     </div>
   </div>
 </div>
@@ -138,6 +154,8 @@
   function selectStaff(name) {
     currentStaff = name;
     currentStore = '合計';
+    const sel = document.getElementById('staff-select');
+    if (sel) sel.value = name;
     renderStaffTabs();
     renderContent();
   }
@@ -317,14 +335,30 @@
   function showKekkinModal(tnUrl) {
     const modal = document.getElementById('kekkinModal');
     const qrDiv = document.getElementById('kekkinQr');
-    qrDiv.innerHTML = '';
-    new QRCode(qrDiv, { text: tnUrl, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
-    modal.classList.add('open');
+    const msg   = document.getElementById('kekkinModalMsg');
+    const btn   = document.getElementById('kekkinProceedBtn');
 
-    document.getElementById('kekkinProceedBtn').onclick = async () => {
-      const win = window.open('', '_blank');
-      await execShip(win);
-    };
+    if (isMobile()) {
+      qrDiv.style.display = 'none';
+      msg.textContent = 'TNアプリへ差し戻しを行います';
+      btn.textContent = 'TNアプリを開く';
+      btn.onclick = async () => {
+        const win = window.open('', '_blank');
+        await execShip(win);
+      };
+    } else {
+      qrDiv.style.display = 'block';
+      qrDiv.innerHTML = '';
+      new QRCode(qrDiv, { text: tnUrl, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+      msg.textContent = 'スマホの場合はQRを読み取ってください';
+      btn.textContent = 'このまま進める（PC）';
+      btn.onclick = async () => {
+        const win = window.open('', '_blank');
+        await execShip(win);
+      };
+    }
+
+    modal.classList.add('open');
   }
 
   function closeKekkinModal() {
