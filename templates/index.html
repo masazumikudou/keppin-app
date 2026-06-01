@@ -343,8 +343,7 @@
       msg.textContent = 'TNアプリへ差し戻しを行います';
       btn.textContent = 'TNアプリを開く';
       btn.onclick = async () => {
-        const win = window.open('', '_blank');
-        await execShip(win);
+        await execShip(null);
       };
     } else {
       qrDiv.style.display = 'block';
@@ -387,10 +386,15 @@
         const rec = records.find(r => String(r.id || r['id']) === String(id));
         if (rec) { rec.is_shortage = 0; rec['欠品'] = '〇'; }
       });
-      win.location.href = tnUrl;
+      closeKekkinModal();
+      if (win) {
+        win.location.href = tnUrl;
+      } else {
+        window.location.href = tnUrl;
+      }
       renderContent();
     } else {
-      win.close();
+      if (win) win.close();
       alert('エラーが発生しました: ' + (data.error || ''));
     }
   }
