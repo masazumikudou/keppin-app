@@ -67,7 +67,53 @@
       white-space: nowrap;
       font-family: var(--font-mono);
       letter-spacing: 0.06em;
+      cursor: pointer;
     }
+    .nyuka-badge:hover { opacity: 0.8; }
+
+    /* 入荷予定モーダル */
+    #nyukaModal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65); z-index: 2000;
+      align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    #nyukaModal.open { display: flex; }
+    #nyukaModalBox {
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      width: 100%; max-width: 480px;
+      max-height: 80vh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    #nyukaModalHeader {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px; font-weight: 600; color: var(--fg);
+    }
+    #nyukaModalClose {
+      background: none; border: none; color: var(--fg-muted);
+      font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;
+    }
+    #nyukaModalClose:hover { color: var(--fg); }
+    #nyukaModalBody {
+      overflow-y: auto; padding: 12px 18px;
+    }
+    .nyuka-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line-faint);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .nyuka-row:last-child { border-bottom: none; }
+    .nyuka-sku { color: var(--fg); }
+    .nyuka-right { display: flex; gap: 14px; }
+    .nyuka-date { color: var(--accent); font-weight: 600; }
+    .nyuka-qty  { color: var(--fg-muted); }
 
     /* 担当者タブ */
     .staff-tabs {
@@ -250,7 +296,18 @@
 </head>
 <body>
 
-<h1>チュウザンくん{% if nyuka_badge %}<span class="nyuka-badge" style="background:{{ nyuka_badge.bg }}; color:{{ nyuka_badge.text }};">入荷予定 {{ nyuka_badge.date }} 更新</span>{% endif %}</h1>
+<h1>チュウザンくん{% if nyuka_badge %}<span class="nyuka-badge" style="background:{{ nyuka_badge.bg }}; color:{{ nyuka_badge.text }};" onclick="openNyukaModal()">入荷予定 {{ nyuka_badge.date }} 更新</span>{% endif %}</h1>
+
+<!-- 入荷予定モーダル -->
+<div id="nyukaModal" onclick="if(event.target===this)closeNyukaModal()">
+  <div id="nyukaModalBox">
+    <div id="nyukaModalHeader">
+      <span>入荷予定一覧</span>
+      <button id="nyukaModalClose" onclick="closeNyukaModal()">✕</button>
+    </div>
+    <div id="nyukaModalBody"></div>
+  </div>
+</div>
 <div class="staff-tabs">
   {% for name in staff_list %}
   <div class="staff-tab" id="tab-{{ name }}" onclick="selectStaff('{{ name }}')">{{ name }}<span id="tabdate-{{ name }}" style="font-size:11px; color:var(--fg-faint); margin-left:3px;"></span></div>
@@ -588,6 +645,34 @@
   }
 
   if (staffList.length > 0) selectStaff(staffList[0]);
+
+  function openNyukaModal() {
+    const entries = Object.entries(nyuka)
+      .sort((a, b) => {
+        const [am, ad] = a[1].date.split('/').map(Number);
+        const [bm, bd] = b[1].date.split('/').map(Number);
+        return (am * 31 + ad) - (bm * 31 + bd);
+      });
+    const body = document.getElementById('nyukaModalBody');
+    if (entries.length === 0) {
+      body.innerHTML = '<p style="color:var(--fg-faint);padding:16px 0;text-align:center;">データなし</p>';
+    } else {
+      body.innerHTML = entries.map(([sku, info]) =>
+        `<div class="nyuka-row">
+          <span class="nyuka-sku">${sku}</span>
+          <span class="nyuka-right">
+            <span class="nyuka-qty">${info.qty}個</span>
+            <span class="nyuka-date">${info.date}</span>
+          </span>
+        </div>`
+      ).join('');
+    }
+    document.getElementById('nyukaModal').classList.add('open');
+  }
+
+  function closeNyukaModal() {
+    document.getElementById('nyukaModal').classList.remove('open');
+  }
 </script>
 </body>
 </html>
