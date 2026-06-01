@@ -5,59 +5,201 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>チュウザンくん</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700&family=Archivo+Black&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: sans-serif; background: #f5f5f5; }
+    :root {
+      --font-sans:    "Inter", "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+      --font-mono:    "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
 
-    h1 { padding: 14px 16px; background: #fff; border-bottom: 1px solid #ddd; font-size: 18px; color: #333; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-    .nyuka-badge { font-size:12px; font-weight:bold; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+      --bg-0: #0a0a0a;
+      --bg-1: #101012;
+      --bg-2: #16161a;
+
+      --line-faint:  #2e2e34;
+      --line:        #44444c;
+      --line-strong: #5a5a64;
+
+      --fg:          #ededed;
+      --fg-muted:    #9a9aa1;
+      --fg-faint:    #6a6a72;
+      --fg-disabled: #45454c;
+
+      --accent:       oklch(0.70 0.13 55);
+      --accent-hover: oklch(0.76 0.13 55);
+      --accent-faint: oklch(0.70 0.13 55 / 0.13);
+      --accent-line:  oklch(0.70 0.13 55 / 0.34);
+      --accent-fg:    #0a0a0a;
+
+      --ok:  oklch(0.75 0.14 150);
+      --err: oklch(0.70 0.18 25);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-0);
+      color: var(--fg);
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1 {
+      padding: 14px 16px;
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--line-faint);
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--fg);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .nyuka-badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 3px;
+      white-space: nowrap;
+      font-family: var(--font-mono);
+      letter-spacing: 0.06em;
+    }
 
     /* 担当者タブ */
-    .staff-tabs { display: flex; flex-wrap: nowrap; padding: 10px 16px 0; gap: 4px; background: #fff; border-bottom: 2px solid #e0e0e0; }
-    .staff-tab { flex: 1; min-width: 0; text-align: center; padding: 7px 4px; border-radius: 6px 6px 0 0; border: 1px solid #ddd; border-bottom: none; cursor: pointer; font-size: 13px; background: #f0f0f0; color: #666; white-space: nowrap; overflow: hidden; }
-    .staff-tab.active { background: #fff; color: #1a73e8; font-weight: bold; border-color: #1a73e8; border-bottom: 2px solid #fff; margin-bottom: -2px; }
+    .staff-tabs {
+      display: flex;
+      flex-wrap: nowrap;
+      padding: 10px 16px 0;
+      gap: 4px;
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--line);
+    }
+    .staff-tab {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+      padding: 7px 4px;
+      border-radius: 6px 6px 0 0;
+      border: 1px solid var(--line);
+      border-bottom: none;
+      cursor: pointer;
+      font-size: 13px;
+      background: var(--bg-0);
+      color: var(--fg-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      transition: color 120ms, background 120ms;
+    }
+    .staff-tab.active {
+      background: var(--bg-2);
+      color: var(--accent);
+      font-weight: 600;
+      border-color: var(--accent-line);
+      border-bottom: 2px solid var(--bg-2);
+      margin-bottom: -1px;
+    }
 
     .content { padding: 16px; }
 
     /* 店舗タブ */
     .store-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-    .store-tab { padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; cursor: pointer; font-size: 13px; background: #f0f0f0; color: #666; display:inline-flex; align-items:center; gap:6px; }
-    .store-tab.active { background: #1a73e8; color: #fff; border-color: #1a73e8; }
-    .store-tab-del { font-size:12px; line-height:1; color:#aaa; cursor:pointer; padding:0 2px; }
-    .store-tab.active .store-tab-del { color:rgba(255,255,255,0.7); }
-    .store-tab-del:hover { color:#e53935; }
+    .store-tab {
+      padding: 5px 12px;
+      border-radius: 5px;
+      border: 1px solid var(--line);
+      cursor: pointer;
+      font-size: 13px;
+      background: var(--bg-1);
+      color: var(--fg-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 120ms, background 120ms, border-color 120ms;
+    }
+    .store-tab:hover { background: var(--bg-2); color: var(--fg); border-color: var(--line-strong); }
+    .store-tab.active { background: var(--accent-faint); color: var(--accent); border-color: var(--accent-line); }
+    .store-tab-del { font-size: 12px; line-height: 1; color: var(--fg-faint); cursor: pointer; padding: 0 2px; }
+    .store-tab.active .store-tab-del { color: var(--accent); opacity: 0.6; }
+    .store-tab-del:hover { color: var(--err); }
 
     /* 出荷ボタン */
-    .btn-ship { padding: 10px 24px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-top: 12px; width: 100%; }
-    .btn-ship:hover { background: #1558b0; }
-    .btn-ship:disabled { background: #aaa; cursor: not-allowed; }
+    .btn-ship {
+      height: 40px;
+      padding: 0 16px;
+      background: var(--accent);
+      color: var(--accent-fg);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 12px;
+      width: 100%;
+      transition: background 120ms;
+    }
+    .btn-ship:hover { background: var(--accent-hover); }
+    .btn-ship:disabled { background: var(--bg-2); color: var(--fg-disabled); border-color: var(--line); cursor: not-allowed; }
 
     /* 差し戻しモーダル */
-    #kekkinModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center; }
-    #kekkinModal.open { display:flex; }
-    #kekkinModalBox { background:#fff; border-radius:12px; padding:28px 24px; max-width:380px; width:90%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
-    #kekkinModalBox h2 { font-size:17px; color:#333; margin-bottom:6px; }
-    #kekkinModalBox p { font-size:13px; color:#666; margin-bottom:18px; }
-    #kekkinQr { margin:0 auto 18px; width:180px; height:180px; }
-    #kekkinQr canvas, #kekkinQr img { width:180px !important; height:180px !important; }
-    .kekkin-btn-row { display:flex; gap:10px; justify-content:center; margin-top:8px; }
-    #kekkinProceedBtn { flex:1; padding:12px; background:#1a73e8; color:#fff; border:none; border-radius:6px; font-size:14px; font-weight:bold; cursor:pointer; }
-    #kekkinProceedBtn:hover { background:#1558b0; }
-    #kekkinCancelBtn { padding:12px 18px; background:#f0f0f0; color:#555; border:none; border-radius:6px; font-size:14px; cursor:pointer; }
-    #kekkinCancelBtn:hover { background:#e0e0e0; }
-    input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; }
+    #kekkinModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+    #kekkinModal.open { display: flex; }
+    #kekkinModalBox {
+      background: var(--bg-1);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 24px 20px;
+      max-width: 360px;
+      width: 90%;
+      text-align: center;
+    }
+    #kekkinModalBox h2 { font-size: 16px; font-weight: 600; color: var(--fg); margin-bottom: 6px; letter-spacing: -0.01em; }
+    #kekkinModalBox p { font-size: 13px; color: var(--fg-muted); margin-bottom: 18px; }
+    #kekkinQr { margin: 0 auto 18px; width: 180px; height: 180px; }
+    #kekkinQr canvas, #kekkinQr img { width: 180px !important; height: 180px !important; }
+    .kekkin-btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 8px; }
+    #kekkinProceedBtn {
+      flex: 1;
+      height: 40px;
+      background: var(--accent);
+      color: var(--accent-fg);
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 120ms;
+    }
+    #kekkinProceedBtn:hover { background: var(--accent-hover); }
+    #kekkinCancelBtn {
+      height: 40px;
+      padding: 0 18px;
+      background: transparent;
+      color: var(--fg-muted);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 120ms, border-color 120ms;
+    }
+    #kekkinCancelBtn:hover { background: var(--bg-2); border-color: var(--line-strong); color: var(--fg); }
+    input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
 
-    .badge-ok { color: #2e7d32; font-weight: bold; }
-    .badge-ng { color: #c62828; font-weight: bold; }
-    .empty { color: #999; font-size: 14px; padding: 20px 0; }
+    .badge-ok { color: var(--ok); font-weight: bold; }
+    .badge-ng { color: var(--err); font-weight: bold; }
+    .empty { color: var(--fg-faint); font-size: 14px; padding: 20px 0; }
 
     /* ── PC：テーブル表示 ── */
     @media (min-width: 768px) {
       .content { padding: 20px; }
-      table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-      th { background: #f8f8f8; padding: 10px 14px; text-align: left; font-size: 13px; color: #555; border-bottom: 1px solid #e0e0e0; }
-      td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+      table { width: 100%; border-collapse: collapse; background: var(--bg-1); border: 1px solid var(--line-faint); border-radius: 8px; overflow: hidden; }
+      th { background: var(--bg-2); padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 500; color: var(--fg-faint); letter-spacing: 0.04em; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+      td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--line-faint); color: var(--fg); }
       tr:last-child td { border-bottom: none; }
+      tr:hover td { background: var(--bg-2); }
       .card-list { display: none; }
       .btn-ship { width: auto; }
       .staff-select-wrap { display: none; }
@@ -66,23 +208,40 @@
     /* ── スマホ：カード表示 ── */
     @media (max-width: 767px) {
       table { display: none; }
-      .card-list { display: flex; flex-direction: column; gap: 10px; }
-      .card-item { background: #fff; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; }
-      .card-item.is-ok { border-left: 4px solid #2e7d32; }
-      .card-item.is-ng { border-left: 4px solid #c62828; }
+      .card-list { display: flex; flex-direction: column; gap: 8px; }
+      .card-item {
+        background: var(--bg-1);
+        border: 1px solid var(--line-faint);
+        border-radius: 8px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .card-item.is-ok { border-left: 3px solid var(--ok); }
+      .card-item.is-ng { border-left: 3px solid var(--err); }
       .card-chk { flex-shrink: 0; }
       .card-body { flex: 1; }
-      .card-sku { font-size: 15px; font-weight: bold; color: #333; }
-      .card-meta { font-size: 12px; color: #888; margin-top: 3px; }
+      .card-sku { font-size: 15px; font-weight: 600; color: var(--fg); font-family: var(--font-mono); }
+      .card-meta { font-size: 12px; color: var(--fg-faint); margin-top: 3px; font-family: var(--font-mono); }
       .card-status { font-size: 13px; font-weight: bold; margin-top: 4px; }
-      /* 合計タブのカード */
-      .sum-card { background: #fff; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border-left: 4px solid #c62828; margin-bottom: 10px; }
-      .sum-card-sku { font-size: 15px; font-weight: bold; color: #333; }
-      .sum-card-meta { font-size: 12px; color: #888; margin-top: 3px; }
-      /* 担当者タブを非表示→ドロップダウンへ */
+      .sum-card {
+        background: var(--bg-1);
+        border: 1px solid var(--line-faint);
+        border-left: 3px solid var(--err);
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin-bottom: 8px;
+      }
+      .sum-card-sku { font-size: 15px; font-weight: 600; color: var(--fg); font-family: var(--font-mono); }
+      .sum-card-meta { font-size: 12px; color: var(--fg-faint); margin-top: 3px; font-family: var(--font-mono); }
       .staff-tabs { display: none; }
-      .staff-select-wrap { display: block; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e0e0e0; }
-      /* 店舗タブを横スライドに */
+      .staff-select-wrap {
+        display: block;
+        padding: 10px 16px;
+        background: var(--bg-1);
+        border-bottom: 1px solid var(--line);
+      }
       .store-tabs { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: none; }
       .store-tabs::-webkit-scrollbar { display: none; }
       .store-tab { flex-shrink: 0; scroll-snap-align: start; }
@@ -94,12 +253,12 @@
 <h1>チュウザンくん{% if nyuka_badge %}<span class="nyuka-badge" style="background:{{ nyuka_badge.bg }}; color:{{ nyuka_badge.text }};">入荷予定 {{ nyuka_badge.date }} 更新</span>{% endif %}</h1>
 <div class="staff-tabs">
   {% for name in staff_list %}
-  <div class="staff-tab" id="tab-{{ name }}" onclick="selectStaff('{{ name }}')">{{ name }}<span id="tabdate-{{ name }}" style="font-size:11px; color:#999; margin-left:3px;"></span></div>
+  <div class="staff-tab" id="tab-{{ name }}" onclick="selectStaff('{{ name }}')">{{ name }}<span id="tabdate-{{ name }}" style="font-size:11px; color:var(--fg-faint); margin-left:3px;"></span></div>
   {% endfor %}
 </div>
 <div class="staff-select-wrap">
   <select id="staff-select" onchange="selectStaff(this.value)"
-    style="width:100%; padding:10px 12px; font-size:16px; border:1px solid #ddd; border-radius:8px; background:#fff; color:#333; appearance:auto;">
+    style="width:100%; padding:10px 12px; font-size:16px; border:1px solid var(--line); border-radius:6px; background:var(--bg-2); color:var(--fg); appearance:auto;">
     {% for name in staff_list %}
     <option value="{{ name }}">{{ name }}</option>
     {% endfor %}
@@ -207,13 +366,18 @@
         const pcTable = `<table>
           <thead><tr><th>品番</th><th>色</th><th>合計数量</th><th>欠品店舗</th></tr></thead>
           <tbody>${rows.map(r =>
-            `<tr><td>${r.sku}</td><td>${r.color}</td><td>${r.qty}</td><td>${r.stores.join('・')}</td></tr>`
+            `<tr>
+              <td style="font-family:var(--font-mono)">${r.sku}</td>
+              <td style="font-family:var(--font-mono)">${r.color}</td>
+              <td style="font-family:var(--font-mono)">${r.qty}</td>
+              <td>${r.stores.join('・')}</td>
+            </tr>`
           ).join('')}</tbody>
         </table>`;
         // スマホカード
         const spCards = `<div class="card-list">${rows.map(r =>
           `<div class="sum-card">
-            <div class="sum-card-sku">❌ ${r.sku} <span style="color:#888;font-weight:normal;">${r.color}</span></div>
+            <div class="sum-card-sku">❌ ${r.sku} <span style="color:var(--fg-faint);font-weight:normal;">${r.color}</span></div>
             <div class="sum-card-meta">合計 ${r.qty}個　｜　${r.stores.join('・')}</div>
           </div>`
         ).join('')}</div>`;
@@ -242,15 +406,17 @@
             const qty = r['数量'] || r.quantity || 0;
             const nyukaInfo = nyuka[sku] || null;
             const nyukaCell = nyukaInfo
-              ? `<span style="color:#1a73e8;font-weight:bold;">${nyukaInfo.date}</span><span style="color:#888;font-size:11px;margin-left:4px;">${nyukaInfo.qty}個</span>`
-              : '-';
+              ? `<span style="color:var(--accent);font-weight:bold;font-family:var(--font-mono)">${nyukaInfo.date}</span><span style="color:var(--fg-faint);font-size:11px;margin-left:4px;font-family:var(--font-mono)">${nyukaInfo.qty}個</span>`
+              : '<span style="color:var(--fg-faint)">-</span>';
             const chk = isSh
               ? `<input type="checkbox" class="ship-chk ship-chk-${storeId}" value="${r.id || r['id']}" data-sku="${sku}" data-color="${color}" data-qty="${qty}">`
               : '';
             return `<tr id="row-${r.id || r['id']}">
-              <td>${chk}</td><td>${dateStr}</td>
-              <td>${sku}</td><td>${color}</td>
-              <td>${qty}</td>
+              <td>${chk}</td>
+              <td style="font-family:var(--font-mono)">${dateStr}</td>
+              <td style="font-family:var(--font-mono)">${sku}</td>
+              <td style="font-family:var(--font-mono)">${color}</td>
+              <td style="font-family:var(--font-mono)">${qty}</td>
               <td class="${isSh ? 'badge-ng' : 'badge-ok'}">${isSh ? '❌欠品' : '✅完納'}</td>
               <td>${nyukaCell}</td>
             </tr>`;
@@ -273,7 +439,7 @@
             <div class="card-chk">${chk}</div>
             <div class="card-body">
               <div class="card-sku">${sku}</div>
-              <div class="card-meta">${color}　｜　${qty}個　｜　${dateStr}${nyukaInfo ? `　｜　入荷 <span style="color:#1a73e8;font-weight:bold;">${nyukaInfo.date}</span> ${nyukaInfo.qty}個` : ''}</div>
+              <div class="card-meta">${color}　｜　${qty}個　｜　${dateStr}${nyukaInfo ? `　｜　入荷 <span style="color:var(--accent);font-weight:bold;">${nyukaInfo.date}</span> ${nyukaInfo.qty}個` : ''}</div>
               <div class="card-status ${isSh ? 'badge-ng' : 'badge-ok'}">${isSh ? '❌欠品' : '✅完納'}</div>
             </div>
           </div>`;
@@ -290,13 +456,12 @@
     `;
   }
 
-  let _kekkinPending = null; // モーダル確定時に使うデータを保持
+  let _kekkinPending = null;
 
   async function shipSelected(storeId) {
     const checked = [...document.querySelectorAll(`.${CSS.escape('ship-chk-' + storeId)}:checked`)];
     if (checked.length === 0) { alert('出荷する品番を選択してください'); return; }
 
-    // 店舗情報を records から取得（複合キー対応）
     const [filterName, filterDate] = currentStore.split('|||');
     const storeRecs = records.filter(r =>
       (r['担当者名'] || r.staff_name) === currentStaff &&
@@ -315,7 +480,6 @@
       quantity: parseInt(c.dataset.qty || '0'),
     }));
 
-    // TN差し戻しURLを構築
     const base = TN_APP_URL || window.location.origin.replace(/:8090$/, ':8080');
     const params = new URLSearchParams({
       from:  'kekkin',
@@ -327,7 +491,6 @@
     });
     const tnUrl = `${base}/order?${params.toString()}`;
 
-    // モーダルを開く
     _kekkinPending = { ids, storeName, staffName, storeCode, today, items, tnUrl };
     showKekkinModal(tnUrl);
   }
@@ -386,7 +549,6 @@
         const rec = records.find(r => String(r.id || r['id']) === String(id));
         if (rec) { rec.is_shortage = 0; rec['欠品'] = '〇'; }
       });
-      closeKekkinModal();
       if (win) {
         win.location.href = tnUrl;
       } else {

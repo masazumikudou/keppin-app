@@ -6,11 +6,11 @@ from config import TN_APP_URL
 bp = Blueprint('view', __name__)
 
 _NYUKA_BADGE_COLORS = [
-    {'bg': '#ffebee', 'text': '#c62828'},  # 赤
-    {'bg': '#e3f2fd', 'text': '#1565c0'},  # 青
-    {'bg': '#e8f5e9', 'text': '#2e7d32'},  # 緑
-    {'bg': '#fff3e0', 'text': '#e65100'},  # オレンジ
-    {'bg': '#f3e5f5', 'text': '#6a1b9a'},  # 紫
+    {'bg': '#221010', 'text': '#e87070'},  # 赤
+    {'bg': '#0d1926', 'text': '#6aaad4'},  # 青
+    {'bg': '#0d1f14', 'text': '#62b87a'},  # 緑
+    {'bg': '#221808', 'text': '#d49040'},  # オレンジ
+    {'bg': '#1a1028', 'text': '#b07ed4'},  # 紫
 ]
 
 
