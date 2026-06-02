@@ -193,6 +193,22 @@
     .btn-ship:hover { background: var(--accent-hover); }
     .btn-ship:disabled { background: var(--bg-2); color: var(--fg-disabled); border-color: var(--line); cursor: not-allowed; }
 
+    /* 全てにチェックボタン */
+    .btn-check-all {
+      height: 40px;
+      padding: 0 16px;
+      background: transparent;
+      color: var(--fg-muted);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 14px;
+      margin-top: 8px;
+      width: 100%;
+      cursor: pointer;
+      transition: background 120ms, border-color 120ms, color 120ms;
+    }
+    .btn-check-all:hover { background: var(--bg-2); border-color: var(--line-strong); color: var(--fg); }
+
     /* 差し戻しモーダル */
     #kekkinModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
     #kekkinModal.open { display: flex; }
@@ -505,7 +521,11 @@
           </div>`;
         }).join('')}</div>`;
 
-        bodyHtml = pcTable + spCards +
+        const hasShortage = storeRecords.some(r => r['欠品'] === '✖' || r.is_shortage == 1);
+        const checkAllBtn = hasShortage
+          ? `<button id="check-all-btn-${storeId}" class="btn-check-all" onclick="checkAll('${storeId}')">全てにチェック</button>`
+          : '';
+        bodyHtml = pcTable + spCards + checkAllBtn +
           `<button class="btn-ship" onclick="shipSelected('${storeId}')">選択した品番を出荷済みにする</button>`;
       }
     }
@@ -645,6 +665,14 @@
     } else {
       alert('削除に失敗しました: ' + (data.error || ''));
     }
+  }
+
+  function checkAll(storeId) {
+    const chks = [...document.querySelectorAll(`.${CSS.escape('ship-chk-' + storeId)}`)];
+    const allChecked = chks.length > 0 && chks.every(c => c.checked);
+    chks.forEach(c => { c.checked = !allChecked; });
+    const btn = document.getElementById(`check-all-btn-${storeId}`);
+    if (btn) btn.textContent = allChecked ? '全てにチェック' : '全て解除';
   }
 
   if (staffList.length > 0) selectStaff(staffList[0]);
