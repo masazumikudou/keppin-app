@@ -365,7 +365,10 @@
   let currentStore = null;
 
 
-  function isMobile() { return window.innerWidth < 768; }
+  function isMobile() {
+    // iPad も含むタッチデバイスをモバイル扱いにする
+    return window.innerWidth < 1024 || navigator.maxTouchPoints > 0;
+  }
 
   function renderStaffTabs() {
     staffList.forEach(name => {
@@ -539,7 +542,7 @@
   let _kekkinPending = null;
 
   async function shipSelected(storeId) {
-    const checked = [...document.querySelectorAll(`.${CSS.escape('ship-chk-' + storeId)}:checked`)];
+    const checked = [...document.querySelectorAll(`table .${CSS.escape('ship-chk-' + storeId)}:checked`)];
     if (checked.length === 0) { alert('出荷する品番を選択してください'); return; }
 
     const [filterName, filterDate] = currentStore.split('|||');
@@ -668,7 +671,8 @@
   }
 
   function checkAll(storeId) {
-    const chks = [...document.querySelectorAll(`.${CSS.escape('ship-chk-' + storeId)}`)];
+    // card-listは非表示のため、テーブル内のチェックボックスのみ対象にする
+    const chks = [...document.querySelectorAll(`table .${CSS.escape('ship-chk-' + storeId)}`)];
     const allChecked = chks.length > 0 && chks.every(c => c.checked);
     chks.forEach(c => { c.checked = !allChecked; });
     const btn = document.getElementById(`check-all-btn-${storeId}`);

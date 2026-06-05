@@ -8,12 +8,12 @@ def send_order(store_name: str, tantosha: str, store_code: str,
         return {'status': 'skipped', 'reason': 'TN_APP_URL not configured'}
 
     cart = {}
-    for i, item in enumerate(items):
-        key = f"{item['sku']}_{item.get('color', '')}_{i}"
+    for item in items:
+        key = f"{item['sku']}_{item.get('color', '')}"
         cart[key] = {
-            'hinban':   item['sku'],
-            'iro':      item.get('color', ''),
-            'quantity': int(item.get('quantity', 0)),
+            'hinban': item['sku'],
+            'iro':    item.get('color', ''),
+            'qty':    int(item.get('quantity', 0)),
         }
 
     payload = {
