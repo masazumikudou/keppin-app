@@ -29,14 +29,8 @@ def ship():
 
     result = {'success': True, 'shipped': len(ids)}
 
-    # 出荷品番がある場合は OS2 登録（メール送信はTNアプリからユーザーが行うため不要）
-    if items and store_name:
-        try:
-            from services.os2_client import save_order
-            os2_res = save_order(store_name, staff_name, store_code, items)
-            result['os2'] = os2_res
-        except Exception as e:
-            result['os2_error'] = str(e)
+    # OS2登録はTNアプリ側で行うため、チュウザンくんからは呼ばない
+    # フロー：TN → OS2 → チュウザンくん → TN（ここで終わり）
 
     return jsonify(result)
 

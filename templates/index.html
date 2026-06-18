@@ -542,7 +542,10 @@
   let _kekkinPending = null;
 
   async function shipSelected(storeId) {
-    const checked = [...document.querySelectorAll(`table .${CSS.escape('ship-chk-' + storeId)}:checked`)];
+    // table（PC）とcard-list（スマホ）の両方から取得し、同一IDの重複を排除
+    const allChecked = [...document.querySelectorAll(`.${CSS.escape('ship-chk-' + storeId)}:checked`)];
+    const seen = new Set();
+    const checked = allChecked.filter(c => seen.has(c.value) ? false : (seen.add(c.value), true));
     if (checked.length === 0) { alert('出荷する品番を選択してください'); return; }
 
     const [filterName, filterDate] = currentStore.split('|||');
@@ -671,8 +674,8 @@
   }
 
   function checkAll(storeId) {
-    // card-listは非表示のため、テーブル内のチェックボックスのみ対象にする
-    const chks = [...document.querySelectorAll(`table .${CSS.escape('ship-chk-' + storeId)}`)];
+    // 表示中のコンテナ（PC=table、スマホ=card-list）のチェックボックスをまとめて操作
+    const chks = [...document.querySelectorAll(`.${CSS.escape('ship-chk-' + storeId)}`)];
     const allChecked = chks.length > 0 && chks.every(c => c.checked);
     chks.forEach(c => { c.checked = !allChecked; });
     const btn = document.getElementById(`check-all-btn-${storeId}`);
